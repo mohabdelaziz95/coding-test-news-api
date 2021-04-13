@@ -2,22 +2,24 @@
 
 namespace Package\BrokenProvider;
 
-use App\Contracts\NewsAggregatorInterface;
-use App\DTOs\ArticleData;
-use App\ValueObjects\DataSource;
+use RuntimeException;
 
-final class BrokenProvider implements NewsAggregatorInterface
+class BrokenProvider
 {
-    /** @var DataSource */
-    private DataSource $dataSource;
+    private $data = [];
 
     public function __construct()
     {
-        $this->dataSource = new DataSource(__DIR__ . DIRECTORY_SEPARATOR . 'broken.xml');
+        $path = __DIR__.DIRECTORY_SEPARATOR.'broken.xml';
+        if (!file_exists($path)) {
+            throw new RuntimeException('File data is not found.');
+        }
+
+        $this->data = simplexml_load_file($path);
     }
 
-    public function fetch (): array
+    public function getNews()
     {
-        return ArticleData::allFromDataSource(json_decode($this->dataSource->contents(), true));
+        return $this->data;
     }
 }

@@ -1,22 +1,25 @@
 <?php
+
 namespace Package\NYTimes;
 
-use App\Contracts\NewsAggregatorInterface;
-use App\DTOs\ArticleData;
-use App\ValueObjects\DataSource;
+use RuntimeException;
 
-final class NewYorkTimes implements NewsAggregatorInterface
+class NewYorkTimes
 {
-    /** @var DataSource */
-    private DataSource $dataSource;
+    private $data = [];
 
     public function __construct()
     {
-        $this->dataSource = new DataSource(__DIR__ . DIRECTORY_SEPARATOR . 'nytimes.xml');
+        $path = __DIR__.DIRECTORY_SEPARATOR.'nytimes.xml';
+        if (!file_exists($path)) {
+            throw new RuntimeException('File data is not found.');
+        }
+
+        $this->data = simplexml_load_file($path);
     }
 
-    public function fetch (): array
+    public function getNews()
     {
-        return ArticleData::allFromDataSource((array) simplexml_load_string($this->dataSource->contents()));
+        return $this->data;
     }
 }
