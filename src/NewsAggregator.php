@@ -1,46 +1,35 @@
 <?php
-
 namespace App;
 
-use Package\FoxNews\FoxNews;
-use Package\NYTimes\NewYorkTimes;
+use App\Factories\NewsAggregatorFactory;
+use Exception;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 
-class NewsAggregator
+final class NewsAggregator
 {
-    private $foxNews;
-    private $newYorkTimes;
 
-    public function __construct()
+    /** @var array */
+    private array $news = [];
+
+    public function __construct ()
     {
-        $this->foxNews = new FoxNews();
-        $this->newYorkTimes = new NewYorkTimes();
+        foreach (NewsAggregatorFactory::newsAggregatorsList() as $key => $newsAggregator) {
+
+            try {
+                 $this->news = array_merge(NewsAggregatorFactory::create($key)
+                     ->fetch(), $this->news);
+
+            } catch (Exception $e) {
+                (new Logger('errors'))
+                    ->pushHandler(new StreamHandler(__DIR__ . '/logs/app-errors.log'))
+                    ->error($e->getMessage());
+            }
+        }
     }
 
-    public function get()
+    public function get(): array
     {
-        $news = [];
-        foreach ($this->foxNews->getNewsFromAPI()['articles'] as $row) {
-            $news[] = [
-                'title'        => $row['title'],
-                'author'       => $row['author'],
-                'image'        => $row['urlToImage'],
-                'publish_date' => $row['publishedAt'],
-                'source'       => $row['source']['name'],
-                'url'          => $row['url'],
-            ];
-        }
-
-        foreach ($this->newYorkTimes->getNews()->articles as $row) {
-            $news[] = [
-                'title'        => (string) $row->title,
-                'author'       => (string) $row->author,
-                'image'        => (string) $row->image,
-                'publish_date' => (string) $row->published_at,
-                'source'       => (string) $row->source,
-                'url'          => (string) $row->url,
-            ];
-        }
-
-        return $news;
+        return $this->news;
     }
 }
