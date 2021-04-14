@@ -1,24 +1,35 @@
 <?php
 namespace App;
 
-use App\Contracts\NewsAggregatorInterface;
 use App\Factories\NewsAggregatorFactory;
+use Exception;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 
 final class NewsAggregator
 {
-    /** @var string */
-    private string $defaultAggregator = 'FoxNews';
 
-    /** @var NewsAggregatorInterface */
-    private NewsAggregatorInterface $newsAggregator;
+    /** @var array */
+    private array $news = [];
 
-    public function __construct(?string $aggregator = null)
+    public function __construct ()
     {
-        $this->newsAggregator = NewsAggregatorFactory::createAggregator($aggregator ?? $this->defaultAggregator);
+        foreach (NewsAggregatorFactory::newsAggregatorsList() as $key => $newsAggregator) {
+
+            try {
+                 $this->news = array_merge(NewsAggregatorFactory::create($key)
+                     ->fetch(), $this->news);
+
+            } catch (Exception $e) {
+                (new Logger('errors'))
+                    ->pushHandler(new StreamHandler(__DIR__ . '/logs/app-errors.log'))
+                    ->error($e->getMessage());
+            }
+        }
     }
 
     public function get(): array
     {
-        return $this->newsAggregator->fetch();
+        return $this->news;
     }
 }

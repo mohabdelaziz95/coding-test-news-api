@@ -1,23 +1,25 @@
 <?php
 namespace App\Factories;
 
+use App\Adapters\BrokenProviderAdapter;
+use App\Adapters\FoxNewsAdapter;
+use App\Adapters\NewYorkTimesAdapter;
 use App\Contracts\NewsAggregatorInterface;
-use Exception;
-use Package\BrokenProvider\BrokenProvider;
-use Package\FoxNews\FoxNews;
-use Package\NYTimes\NewYorkTimes;
 
 final class NewsAggregatorFactory
 {
-    public static function createAggregator (string $aggregator): NewsAggregatorInterface
+    public static function create (string $aggregator): NewsAggregatorInterface
     {
-        $newsAggregatorClient = match ($aggregator) {
-            'FoxNews' => FoxNews::class,
-            'NewYorkTimes' => NewYorkTimes::class,
-            'BrokenProvider' => BrokenProvider::class,
-            default => throw new Exception("{$aggregator}: couldn't be found" )
-        };
+        $newsAggregatorAdapter = self::newsAggregatorsList()[$aggregator];
+        return new $newsAggregatorAdapter;
+    }
 
-        return new $newsAggregatorClient;
+    public static function newsAggregatorsList (): array
+    {
+        return [
+            "FoxNewsAdapter" => FoxNewsAdapter::class,
+            "NewYorkTimes" => NewYorkTimesAdapter::class,
+            "BrokenProvider" => BrokenProviderAdapter::class,
+        ];
     }
 }
